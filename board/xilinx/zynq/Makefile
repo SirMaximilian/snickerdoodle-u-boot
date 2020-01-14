@@ -1,11 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2000-2006
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 obj-y	:= board.o
+obj-y	+= ../common/board.o
 
 ifneq ($(CONFIG_XILINX_PS_INIT_FILE),"")
 PS_INIT_FILE := $(shell cd $(srctree); readlink -f $(CONFIG_XILINX_PS_INIT_FILE))
@@ -26,6 +25,11 @@ init-objs := ps7_init_gpl.o
 $(if $(CONFIG_SPL_BUILD),\
 $(warning Put custom ps7_init_gpl.c/h to board/xilinx/zynq/custom_hw_platform/))
 endif
+endif
+
+ifndef CONFIG_SPL_BUILD
+obj-$(CONFIG_CMD_ZYNQ) += cmds.o
+obj-$(CONFIG_CMD_ZYNQ_RSA) += bootimg.o
 endif
 
 obj-$(CONFIG_SPL_BUILD) += $(init-objs)

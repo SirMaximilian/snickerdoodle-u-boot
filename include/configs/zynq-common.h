@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2012 Michal Simek <monstr@monstr.eu>
- * (C) Copyright 2013 Xilinx, Inc.
+ * (C) Copyright 2013 - 2018 Xilinx, Inc.
  *
  * Common configuration options for all Zynq boards.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_ZYNQ_COMMON_H
@@ -14,6 +13,8 @@
 #ifndef CONFIG_CPU_FREQ_HZ
 # define CONFIG_CPU_FREQ_HZ	800000000
 #endif
+
+#define CONFIG_REMAKE_ELF
 
 /* Cache options */
 #define CONFIG_SYS_L2CACHE_OFF
@@ -36,16 +37,8 @@
 
 /* Ethernet driver */
 #if defined(CONFIG_ZYNQ_GEM)
-# define CONFIG_MII
 # define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
-# define CONFIG_BOOTP_BOOTPATH
-# define CONFIG_BOOTP_GATEWAY
-# define CONFIG_BOOTP_HOSTNAME
 # define CONFIG_BOOTP_MAY_FAIL
-#endif
-
-/* SPI */
-#ifdef CONFIG_ZYNQ_SPI
 #endif
 
 /* QSPI */
@@ -62,22 +55,12 @@
 # define CONFIG_SYS_FLASH_ERASE_TOUT	1000
 # define CONFIG_SYS_FLASH_WRITE_TOUT	5000
 # define CONFIG_FLASH_SHOW_PROGRESS	10
-# define CONFIG_SYS_FLASH_CFI
 # undef CONFIG_SYS_FLASH_EMPTY_INFO
-# define CONFIG_FLASH_CFI_DRIVER
-# undef CONFIG_SYS_FLASH_PROTECTION
-# define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
 #endif
 
 #ifdef CONFIG_NAND_ZYNQ
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_SYS_NAND_ONFI_DETECTION
-#define CONFIG_MTD_DEVICE
-#endif
-
-/* MMC */
-#if defined(CONFIG_MMC_SDHCI_ZYNQ)
-# define CONFIG_ZYNQ_SDHCI_MAX_FREQ	52000000
 #endif
 
 #ifdef CONFIG_USB_EHCI_ZYNQ
@@ -85,9 +68,7 @@
 
 # define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x600000
 # define DFU_DEFAULT_POLL_TIMEOUT	300
-# define CONFIG_USB_CABLE_CHECK
 # define CONFIG_THOR_RESET_OFF
-# define CONFIG_USB_FUNCTION_THOR
 # define DFU_ALT_INFO_RAM \
 	"dfu_ram_info=" \
 	"set dfu_alt_info " \
@@ -120,23 +101,13 @@
 # define DFU_ALT_INFO
 #endif
 
-#if defined(CONFIG_MMC_SDHCI_ZYNQ) || defined(CONFIG_ZYNQ_USB)
-# define CONFIG_SUPPORT_VFAT
-#endif
-
-#if defined(CONFIG_ZYNQ_I2C0) || defined(CONFIG_ZYNQ_I2C1)
-#define CONFIG_SYS_I2C_ZYNQ
-#endif
-
 /* I2C */
 #if defined(CONFIG_SYS_I2C_ZYNQ)
 # define CONFIG_SYS_I2C
-# define CONFIG_SYS_I2C_ZYNQ_SPEED		100000
-# define CONFIG_SYS_I2C_ZYNQ_SLAVE		0
 #endif
 
 /* EEPROM */
-#ifdef CONFIG_ZYNQ_EEPROM
+#ifdef CONFIG_ENV_IS_IN_EEPROM
 # define CONFIG_SYS_I2C_EEPROM_ADDR_LEN		1
 # define CONFIG_SYS_I2C_EEPROM_ADDR		0x54
 # define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	4
@@ -144,54 +115,37 @@
 # define CONFIG_SYS_EEPROM_SIZE			1024 /* Bytes */
 # define CONFIG_SYS_I2C_MUX_ADDR		0x74
 # define CONFIG_SYS_I2C_MUX_EEPROM_SEL		0x4
-#endif
 
 /* Total Size of Environment Sector */
-#ifdef CONFIG_ENV_IS_IN_EEPROM
-# define CONFIG_ENV_SIZE			CONFIG_SYS_EEPROM_SIZE
 # define CONFIG_EXTRA_ENV_SETTINGS
-#else
-# define CONFIG_ENV_SIZE			(128 << 10)
 #endif
 
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
 
-/* Environment */
-#ifndef CONFIG_ENV_IS_NOWHERE
-# define CONFIG_ENV_SECT_SIZE		CONFIG_ENV_SIZE
-
-/* cc108 requires to be 0xF00000 to have boot.bin with bitstream included */
-# ifndef CONFIG_ENV_OFFSET
-#  define CONFIG_ENV_OFFSET		0xE0000
-# endif
-#endif
-
 /* enable preboot to be loaded before CONFIG_BOOTDELAY */
 #define CONFIG_PREBOOT
 
+/* Boot configuration */
 #define CONFIG_SYS_LOAD_ADDR		0 /* default? */
-
-/* Distro boot enablement */
 
 #ifdef CONFIG_SPL_BUILD
 #define BOOTENV
 #else
-#include <config_distro_defaults.h>
 
 #ifdef CONFIG_CMD_MMC
-#define BOOT_TARGET_DEVICES_MMC(func) func(MMC, mmc, 0)
+#define BOOT_TARGET_DEVICES_MMC(func) func(MMC, mmc, 0) func(MMC, mmc, 1)
 #else
 #define BOOT_TARGET_DEVICES_MMC(func)
 #endif
 
 #ifdef CONFIG_CMD_USB
-#define BOOT_TARGET_DEVICES_USB(func) func(USB, usb, 0)
+#define BOOT_TARGET_DEVICES_USB(func) func(USB, usb, 0) func(USB, usb, 1)
 #else
 #define BOOT_TARGET_DEVICES_USB(func)
 #endif
 
-#if defined(CONFIG_CMD_PXE)
+#if defined(CONFIG_CMD_PXE) && defined(CONFIG_CMD_DHCP)
 #define BOOT_TARGET_DEVICES_PXE(func) func(PXE, pxe, na)
 #else
 #define BOOT_TARGET_DEVICES_PXE(func)
@@ -203,8 +157,62 @@
 #define BOOT_TARGET_DEVICES_DHCP(func)
 #endif
 
+#if defined(CONFIG_ZYNQ_QSPI)
+# define BOOT_TARGET_DEVICES_QSPI(func)	func(QSPI, qspi, na)
+#else
+# define BOOT_TARGET_DEVICES_QSPI(func)
+#endif
+
+#if defined(CONFIG_NAND_ZYNQ)
+# define BOOT_TARGET_DEVICES_NAND(func)	func(NAND, nand, na)
+#else
+# define BOOT_TARGET_DEVICES_NAND(func)
+#endif
+
+#if defined(CONFIG_MTD_NOR_FLASH)
+# define BOOT_TARGET_DEVICES_NOR(func)	func(NOR, nor, na)
+#else
+# define BOOT_TARGET_DEVICES_NOR(func)
+#endif
+
+#define BOOTENV_DEV_QSPI(devtypeu, devtypel, instance) \
+	"bootcmd_qspi=sf probe 0 0 0 && " \
+		      "sf read ${scriptaddr} ${script_offset_f} ${script_size_f} && " \
+		      "source ${scriptaddr}; echo SCRIPT FAILED: continuing...;\0"
+
+#define BOOTENV_DEV_NAME_QSPI(devtypeu, devtypel, instance) \
+	"qspi "
+
+#define BOOTENV_DEV_NAND(devtypeu, devtypel, instance) \
+	"bootcmd_nand=nand info && " \
+		      "nand read ${scriptaddr} ${script_offset_f} ${script_size_f} && " \
+		      "source ${scriptaddr}; echo SCRIPT FAILED: continuing...;\0"
+
+#define BOOTENV_DEV_NAME_NAND(devtypeu, devtypel, instance) \
+	"nand "
+
+#define BOOTENV_DEV_NOR(devtypeu, devtypel, instance) \
+	"script_offset_nor=0xE2FC0000\0"        \
+	"bootcmd_nor=cp.b ${script_offset_nor} ${scriptaddr} ${script_size_f} && " \
+		     "source ${scriptaddr}; echo SCRIPT FAILED: continuing...;\0"
+
+#define BOOTENV_DEV_NAME_NOR(devtypeu, devtypel, instance) \
+	"nor "
+
+#define BOOT_TARGET_DEVICES_JTAG(func)  func(JTAG, jtag, na)
+
+#define BOOTENV_DEV_JTAG(devtypeu, devtypel, instance) \
+	"bootcmd_jtag=source $scriptaddr; echo SCRIPT FAILED: continuing...;\0"
+
+#define BOOTENV_DEV_NAME_JTAG(devtypeu, devtypel, instance) \
+	"jtag "
+
 #define BOOT_TARGET_DEVICES(func) \
+	BOOT_TARGET_DEVICES_JTAG(func) \
 	BOOT_TARGET_DEVICES_MMC(func) \
+	BOOT_TARGET_DEVICES_QSPI(func) \
+	BOOT_TARGET_DEVICES_NAND(func) \
+	BOOT_TARGET_DEVICES_NOR(func) \
 	BOOT_TARGET_DEVICES_USB(func) \
 	BOOT_TARGET_DEVICES_PXE(func) \
 	BOOT_TARGET_DEVICES_DHCP(func)
@@ -318,22 +326,27 @@
 		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
 		DFU_ALT_INFO \
 		BOOTENV
+
+	/*"fdt_high=0x20000000\0"		\
+	"initrd_high=0x20000000\0"	\
+	"scriptaddr=0x20000\0"	\
+	"script_offset_f=0xFC0000\0"	\
+	"script_size_f=0x40000\0"	\
+	"fdt_addr_r=0x1f00000\0"        \
+	"pxefile_addr_r=0x2000000\0"    \
+	"kernel_addr_r=0x2000000\0"     \
+	"scriptaddr=0x3000000\0"        \
+	"ramdisk_addr_r=0x3100000\0"    \
+	DFU_ALT_INFO \
+	BOOTENV*/
+	
 #endif
 
 /* Miscellaneous configurable options */
 
-#define CONFIG_CMDLINE_EDITING
-#define CONFIG_AUTO_COMPLETE
-#define CONFIG_SYS_LONGHELP
 #define CONFIG_CLOCKS
 #define CONFIG_SYS_MAXARGS		32 /* max number of command args */
 #define CONFIG_SYS_CBSIZE		2048 /* Console I/O Buffer Size */
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					sizeof(CONFIG_SYS_PROMPT) + 16)
-
-#ifndef CONFIG_NR_DRAM_BANKS
-# define CONFIG_NR_DRAM_BANKS		1
-#endif
 
 #define CONFIG_SYS_MEMTEST_START	0
 #define CONFIG_SYS_MEMTEST_END		0x1000
@@ -344,11 +357,6 @@
 					CONFIG_SYS_INIT_RAM_SIZE - \
 					GENERATED_GBL_DATA_SIZE)
 
-/* Enable the PL to be downloaded */
-#define CONFIG_FPGA_ZYNQPL
-
-/* FIT support */
-#define CONFIG_IMAGE_FORMAT_LEGACY /* enable also legacy image format */
 
 /* Extend size of kernel image for uncompression */
 #define CONFIG_SYS_BOOTM_LEN	(60 * 1024 * 1024)
@@ -359,17 +367,6 @@
 #define CONFIG_SYS_LDSCRIPT  "arch/arm/mach-zynq/u-boot.lds"
 
 #undef CONFIG_BOOTM_NETBSD
-
-#define CONFIG_SYS_HZ			1000
-
-/* For development/debugging */
-#ifdef DEBUG
-# define CONFIG_CMD_REGINFO
-# define CONFIG_PANIC_HANG
-#endif
-
-/* SPL part */
-#define CONFIG_SPL_FRAMEWORK
 
 /* MMC support */
 #ifdef CONFIG_MMC_SDHCI_ZYNQ
@@ -395,15 +392,12 @@
 
 /* qspi mode is working fine */
 #ifdef CONFIG_ZYNQ_QSPI
-#define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	0x100000
 #define CONFIG_SYS_SPI_ARGS_OFFS	0x200000
 #define CONFIG_SYS_SPI_ARGS_SIZE	0x80000
 #define CONFIG_SYS_SPI_KERNEL_OFFS	(CONFIG_SYS_SPI_ARGS_OFFS + \
 					CONFIG_SYS_SPI_ARGS_SIZE)
 #endif
-
-/* for booting directly linux */
 
 /* SP location before relocation, must use scratch RAM */
 #define CONFIG_SPL_TEXT_BASE	0x0
@@ -425,6 +419,8 @@
 /* BSS setup */
 #define CONFIG_SPL_BSS_START_ADDR	0x100000
 #define CONFIG_SPL_BSS_MAX_SIZE		0x100000
+
+#define CONFIG_SPL_LOAD_FIT_ADDRESS 0x10000000
 
 #define CONFIG_SYS_UBOOT_START	CONFIG_SYS_TEXT_BASE
 
