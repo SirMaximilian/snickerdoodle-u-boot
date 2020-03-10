@@ -7,12 +7,14 @@
 
 #include <clk.h>
 #include <common.h>
+#include <cpu_func.h>
 #include <memalign.h>
 #include <wait_bit.h>
 #include <asm/io.h>
 #include "cadence_qspi.h"
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
+#include <zynqmp_firmware.h>
 
 #define CMD_4BYTE_READ  0x13
 
@@ -133,15 +135,15 @@ int cadence_spi_versal_flash_reset(struct udevice *dev)
 	reset_gpio = PMIO_NODE_ID_BASE + gpio.offset;
 
 	/* Request for pin */
-	versal_pm_request(PM_PINCTRL_REQUEST, reset_gpio, 0, 0, 0, NULL);
+	xilinx_pm_request(PM_PINCTRL_REQUEST, reset_gpio, 0, 0, 0, NULL);
 
 	/* Enable hysteresis in cmos receiver */
-	versal_pm_request(PM_PINCTRL_CONFIG_PARAM_SET, reset_gpio,
+	xilinx_pm_request(PM_PINCTRL_CONFIG_PARAM_SET, reset_gpio,
 			  PM_PINCTRL_CONFIG_SCHMITT_CMOS,
 			  PM_PINCTRL_INPUT_TYPE_SCHMITT, 0, NULL);
 
 	/* Disable Tri-state */
-	versal_pm_request(PM_PINCTRL_CONFIG_PARAM_SET, reset_gpio,
+	xilinx_pm_request(PM_PINCTRL_CONFIG_PARAM_SET, reset_gpio,
 			  PM_PINCTRL_CONFIG_TRI_STATE,
 			  PM_PINCTRL_TRI_STATE_DISABLE, 0, NULL);
 	udelay(1);
@@ -153,6 +155,48 @@ int cadence_spi_versal_flash_reset(struct udevice *dev)
 	/* Set value 1 to pin */
 	dm_gpio_set_value(&gpio, 1);
 	udelay(1);
+
+	return 0;
+}
+#else
+#define FLASH_RESET_GPIO	0xC
+int cadence_spi_versal_flash_reset(struct udevice *dev)
+{
+	/* CRP WPROT */
+	writel(0, 0xf126001c);
+	/* GPIO Reset */
+	writel(0, 0xf1260318);
+
+	/* disable IOU write protection */
+	writel(0, 0xff080728);
+
+	/* set direction as output */
+	writel((readl(0xf1020204) | BIT(FLASH_RESET_GPIO)), 0xf1020204);
+
+	/* Data output enable */
+	writel((readl(0xf1020208) | BIT(FLASH_RESET_GPIO)), 0xf1020208);
+
+	/* IOU SLCR write enable */
+	writel(0, 0xf1060828);
+
+	/* set MIO as GPIO */
+	writel(0x60, 0xf1060030);
+
+	/* Set value 1 to pin */
+	writel((readl(0xf1020040) | BIT(FLASH_RESET_GPIO)), 0xf1020040);
+	udelay(10);
+
+	/* Disable Tri-state */
+	writel((readl(0xf1060200) & ~BIT(FLASH_RESET_GPIO)), 0xf1060200);
+	udelay(1);
+
+	/* Set value 0 to pin */
+	writel((readl(0xf1020040) & ~BIT(FLASH_RESET_GPIO)), 0xf1020040);
+	udelay(10);
+
+	/* Set value 1 to pin */
+	writel((readl(0xf1020040) | BIT(FLASH_RESET_GPIO)), 0xf1020040);
+	udelay(10);
 
 	return 0;
 }

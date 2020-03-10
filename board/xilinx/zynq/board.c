@@ -5,7 +5,9 @@
  */
 
 #include <common.h>
+#include <init.h>
 #include <dm/uclass.h>
+#include <env.h>
 #include <fdtdec.h>
 #include <fpga.h>
 #include <malloc.h>
@@ -18,45 +20,8 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_WDT)
-static struct udevice *watchdog_dev;
-#endif
-
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_BOARD_EARLY_INIT_F)
-int board_early_init_f(void)
-{
-# if defined(CONFIG_WDT)
-	/* bss is not cleared at time when watchdog_reset() is called */
-	watchdog_dev = NULL;
-# endif
-
-	return 0;
-}
-#endif
-
 int board_init(void)
 {
-#if defined(CONFIG_ENV_IS_IN_EEPROM) && !defined(CONFIG_SPL_BUILD)
-	unsigned char eepromsel = CONFIG_SYS_I2C_MUX_EEPROM_SEL;
-#endif
-
-#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_WDT)
-	if (uclass_get_device_by_seq(UCLASS_WDT, 0, &watchdog_dev)) {
-		debug("Watchdog: Not found by seq!\n");
-		if (uclass_get_device(UCLASS_WDT, 0, &watchdog_dev)) {
-			puts("Watchdog: Not found!\n");
-			return 0;
-		}
-	}
-
-	wdt_start(watchdog_dev, 0, 0);
-	puts("Watchdog: Started\n");
-# endif
-
-#if defined(CONFIG_ENV_IS_IN_EEPROM) && !defined(CONFIG_SPL_BUILD)
-	if (eeprom_write(CONFIG_SYS_I2C_MUX_ADDR, 0, &eepromsel, 1))
-		puts("I2C:EEPROM selection failed\n");
-#endif
 	return 0;
 }
 
@@ -111,6 +76,8 @@ int board_late_init(void)
 
 	env_set("boot_targets", new_targets);
 
+	env_set_hex("script_offset_f", CONFIG_BOOT_SCRIPT_OFFSET);
+
 	return 0;
 }
 
@@ -138,27 +105,5 @@ int dram_init(void)
 	zynq_ddrc_init();
 
 	return 0;
-}
-#endif
-
-#if defined(CONFIG_WATCHDOG)
-/* Called by macro WATCHDOG_RESET */
-void watchdog_reset(void)
-{
-# if !defined(CONFIG_SPL_BUILD)
-	static ulong next_reset;
-	ulong now;
-
-	if (!watchdog_dev)
-		return;
-
-	now = timer_get_us();
-
-	/* Do not reset the watchdog too often */
-	if (now > next_reset) {
-		wdt_reset(watchdog_dev);
-		next_reset = now + 1000;
-	}
-# endif
 }
 #endif

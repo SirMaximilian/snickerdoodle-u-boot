@@ -5,9 +5,11 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <asm/arch/sys_proto.h>
 #include <memalign.h>
 #include <versalpl.h>
+#include <zynqmp_firmware.h>
 
 static ulong versal_align_dma_buffer(ulong *buf, u32 len)
 {
@@ -38,7 +40,7 @@ static int versal_load(xilinx_desc *desc, const void *buf, size_t bsize,
 	buf_lo = lower_32_bits(bin_buf);
 	buf_hi = upper_32_bits(bin_buf);
 
-	ret = versal_pm_request(VERSAL_PM_LOAD_PDI, VERSAL_PM_PDI_TYPE, buf_lo,
+	ret = xilinx_pm_request(VERSAL_PM_LOAD_PDI, VERSAL_PM_PDI_TYPE, buf_lo,
 				buf_hi, 0, ret_payload);
 	if (ret)
 		puts("PL FPGA LOAD fail\n");

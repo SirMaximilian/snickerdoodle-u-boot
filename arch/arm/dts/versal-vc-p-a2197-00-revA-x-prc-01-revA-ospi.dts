@@ -25,7 +25,6 @@
 /* Mutually exclusive */
 &ospi {
 	status = "okay"; /* U97 MT35XU02G */
-	compatible = "xlnx,versal-ospi-1.0", "cadence,qspi", "cdns,qspi-nor";
 	bus-num = <2>;
 	num-cs = <1>;
 	#stream-id-cells = <1>;
@@ -34,7 +33,7 @@
 	reset-gpios = <&gpio1 0xc GPIO_ACTIVE_HIGH>;
 
 	flash@0 {
-		compatible = "mt35xu02g", "micron,m25p80", "spi-flash";
+		compatible = "mt35xu02g", "micron,m25p80", "jedec,spi-nor";
 		reg = <0>;
 		#address-cells = <0x1>;
 		#size-cells = <0x1>;

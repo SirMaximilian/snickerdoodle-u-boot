@@ -6,7 +6,9 @@
 
 #include <common.h>
 #include <fdtdec.h>
+#include <init.h>
 #include <malloc.h>
+#include <time.h>
 #include <asm/io.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
@@ -200,6 +202,8 @@ int board_late_init(void)
 	initrd_hi = gd->start_addr_sp - CONFIG_STACK_SIZE;
 	initrd_hi = round_down(initrd_hi, SZ_16M);
 	env_set_addr("initrd_high", (void *)initrd_hi);
+
+	env_set_hex("script_offset_f", CONFIG_BOOT_SCRIPT_OFFSET);
 
 	return 0;
 }

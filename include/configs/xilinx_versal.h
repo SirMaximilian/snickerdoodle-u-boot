@@ -47,9 +47,6 @@
 #define CONFIG_BOOTP_BOOTFILESIZE
 #define CONFIG_BOOTP_MAY_FAIL
 
-#define CONFIG_IP_DEFRAG
-#define CONFIG_TFTP_BLOCKSIZE	4096
-
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LOAD_ADDR		0x8000000
 
@@ -92,8 +89,6 @@
 
 #define CONFIG_CLOCKS
 
-#define CONFIG_SF_DEFAULT_SPEED	30000000
-
 #define ENV_MEM_LAYOUT_SETTINGS \
 	"fdt_high=10000000\0" \
 	"fdt_addr_r=0x40000000\0" \
@@ -103,7 +98,6 @@
 	"kernel_size_r=0x10000000\0" \
 	"scriptaddr=0x20000000\0" \
 	"ramdisk_addr_r=0x02100000\0" \
-	"script_offset_f=0x7F80000\0" \
 	"script_size_f=0x80000\0"
 
 #if defined(CONFIG_MMC_SDHCI_ZYNQ)
